@@ -4,8 +4,8 @@ import numpy as np
 import pandas as pd
 
 # --- CONFIGURATION ---
-API_KEY = "RL8gJoEt2xykDjs1SGzInpHyJIFJBctAII29X23aZkuHNO9IpjvvhxmStmrnHzuZ"
-SECRET_KEY = "f4QMata2j2IIJq40mC7ZNhYoCqpRzLp7Q48YYHwoze1bPHuYFpnJoOavRYAIV1e4"
+API_KEY = "UncKoy7aMOMwx3jsSi0gRYJGpIFPRZuAWFZU7oO9kKPsiOzRl0J2aKpdwXOPcBPv"
+SECRET_KEY = "N36PalyoyN5IuiDgSfUer7U0MwyKt1O93KF1kV0SHkNvqeyJ0DHH3tyfDXm9S09h"
 USE_TESTNET = True  # Set to False ONLY when switching to real live funds
 SYMBOLS = ["BTC/USDT", "ETH/USDT", "SOL/USDT"]
 # ---------------------
@@ -14,7 +14,7 @@ exchange = ccxt.binance({
     "apiKey": API_KEY,
     "secret": SECRET_KEY,
     "enableRateLimit": True,
-    "options": {"defaultType": "spot", "useServerTime": True},
+    "options": {"defaultType": "spot", "useServerTime": True, "adjustForTimeDifference": True},
 })
 
 if USE_TESTNET:
