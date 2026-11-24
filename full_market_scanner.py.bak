@@ -1,0 +1,114 @@
+import json
+import ccxt
+import numpy as np
+import pandas as pd
+
+# --- CONFIGURATION ---
+API_KEY = "AbLeZEyxhkKNdxHhaLywgjw5UsjOh6EMRuNDrcMvM6DaB6ZVNkm323UH9UdE0OQE"
+SECRET_KEY = "ePMu5bW0MmVss1H839gAKjaH51hvTc9Xox94wqE3eBaUwnIguVaR1NwuWBqahpbI"
+USE_TESTNET = True  # Set to False ONLY when switching to real live funds
+SYMBOLS = ["BTC/USDT", "ETH/USDT", "SOL/USDT"]
+# ---------------------
+
+exchange = ccxt.binance({
+    "apiKey": API_KEY,
+    "secret": SECRET_KEY,
+    "enableRateLimit": True,
+    "options": {"defaultType": "spot", "useServerTime": True},
+})
+
+if USE_TESTNET:
+    exchange.set_sandbox_mode(True)
+
+
+def analyze_timeframe(symbol, tf):
+    bars = exchange.fetch_ohlcv(symbol, timeframe=tf, limit=210)
+    df = pd.DataFrame(bars, columns=["ts", "open", "high", "low", "close", "volume"])
+
+    df["EMA_20"] = df["close"].ewm(span=20, adjust=False).mean()
+    df["EMA_50"] = df["close"].ewm(span=50, adjust=False).mean()
+    df["EMA_200"] = df["close"].ewm(span=200, adjust=False).mean()
+
+    delta = df["close"].diff()
+    gain = (delta.where(delta > 0, 0)).rolling(14).mean()
+    loss = (-delta.where(delta < 0, 0)).rolling(14).mean()
+    rs = gain / loss.replace(0, np.nan)
+    df["RSI"] = 100 - (100 / (1 + rs))
+
+    tr = np.maximum(
+        df["high"] - df["low"],
+        np.maximum(
+            abs(df["high"] - df["close"].shift()),
+            abs(df["low"] - df["close"].shift()),
+        ),
+    )
+    df["ATR"] = tr.rolling(14).mean()
+    avg_vol = df["volume"].iloc[-21:-1].mean()
+
+    last = df.iloc[-2]  # Last closed candle to prevent repainting
+    price = float(last["close"])
+    resistance = float(df["high"].iloc[-50:-1].max())
+    support = float(df["low"].iloc[-50:-1].min())
+
+    if price > last["EMA_200"] and last["EMA_20"] > last["EMA_50"]:
+        structure = "BULLISH_UPTREND"
+    elif price < last["EMA_200"] and last["EMA_20"] < last["EMA_50"]:
+        structure = "BEARISH_DOWNTREND"
+    else:
+        structure = "SIDEWAYS_CHOPPY"
+
+    return {
+        "structure": structure,
+        "price": round(price, 4),
+        "ema_20": round(float(last["EMA_20"]), 4),
+        "ema_50": round(float(last["EMA_50"]), 4),
+        "ema_200": round(float(last["EMA_200"]), 4),
+        "rsi_14": round(float(last["RSI"]), 2),
+        "atr_14": round(float(last["ATR"]), 4),
+        "volume_ratio": round(float(last["volume"] / avg_vol) if avg_vol > 0 else 1.0, 2),
+        "support_50": round(support, 4),
+        "resistance_50": round(resistance, 4),
+    }
+
+
+def run_scanner():
+    try:
+        balance = exchange.fetch_balance()
+        usdt_free = round(float(balance.get("USDT", {}).get("free", 0.0)), 2)
+
+        holdings = {}
+        open_orders_summary = {}
+        market_data = {}
+
+        for sym in SYMBOLS:
+            coin = sym.split("/")[0]
+            coin_free = float(balance.get(coin, {}).get("free", 0.0))
+            coin_used = float(balance.get(coin, {}).get("used", 0.0))
+            holdings[coin] = {
+                "free": round(coin_free, 6),
+                "locked_in_orders": round(coin_used, 6),
+                "total": round(coin_free + coin_used, 6),
+            }
+            orders = exchange.fetch_open_orders(sym)
+            open_orders_summary[sym] = len(orders)
+            market_data[sym] = {
+                "4h_macro": analyze_timeframe(sym, "4h"),
+                "1h_primary": analyze_timeframe(sym, "1h"),
+                "15m_entry": analyze_timeframe(sym, "15m"),
+            }
+
+        output = {
+            "status": "SUCCESS",
+            "mode": "TESTNET" if USE_TESTNET else "LIVE",
+            "usdt_free": usdt_free,
+            "coin_holdings": holdings,
+            "open_orders_count": open_orders_summary,
+            "markets": market_data,
+        }
+        print(json.dumps(output, indent=2))
+    except Exception as e:
+        print(json.dumps({"status": "ERROR", "message": str(e)}))
+
+
+if __name__ == "__main__":
+    run_scanner()
