@@ -153,3 +153,28 @@
   }
 }
 
+{
+  "at": "2026-11-24 13:04:05 UTC",
+  "action": "SCAN",
+  "decision": "SELL",
+  "reason": "Held asset trend flipped bearish",
+  "symbol": "BTC/USDT"
+}
+{
+  "at": "2026-11-24 13:05:02 UTC",
+  "action": "SCAN",
+  "decision": "SELL",
+  "reason": "Held asset trend flipped bearish",
+  "symbol": "BTC/USDT"
+}
+{
+  "status": "EXECUTED",
+  "action": "SELL",
+  "symbol": "BTC/USDT",
+  "sell_price": 60445.89,
+  "sold_quantity": 1.00165,
+  "order_id": "17380201",
+  "pnl": null,
+  "result": null,
+  "at": "2026-11-24 13:05:04 UTC"
+}
