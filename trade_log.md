@@ -178,3 +178,21 @@
   "result": null,
   "at": "2026-11-24 13:05:04 UTC"
 }
+{
+  "at": "2026-11-24 13:06:15 UTC",
+  "action": "SCAN",
+  "decision": "SELL",
+  "reason": "Held asset trend flipped bearish",
+  "symbol": "ETH/USDT"
+}
+{
+  "status": "EXECUTED",
+  "action": "SELL",
+  "symbol": "ETH/USDT",
+  "sell_price": 1705.67,
+  "sold_quantity": 1.0,
+  "order_id": "12061800",
+  "pnl": null,
+  "result": null,
+  "at": "2026-11-24 13:06:17 UTC"
+}
